@@ -1,4 +1,5 @@
 const User = require("../models/usermodel");
+
 const { generateOTP, sendOTP } = require('../utils/otp'); 
 
 exports.register = async (req, res) => {
@@ -7,22 +8,57 @@ exports.register = async (req, res) => {
     const { firstname, lastname, password, email, mobile,role,cart,address,wishlist } = req.body;
   console.log(req.body)
    
-
-    // Check if email or mobile number already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
-    if (existingUser) {
-      return res.status(400).json({ error: "Email or mobile number already exists" });
-    }
-
     // Create and save the new user
     const user = new User({ firstname, lastname, password, email, mobile,role,cart,address,wishlist });
     await user.save();
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     console.error(error); // Log the error for debugging purposes
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message }); 
   }
 }
+    // Check if email or mobile number already exists
+    // const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
+    // if (existingUser) {
+    //   return res.status(400).json({ error: "Email or mobile number already exists" });
+    // }
+    // Check if email already exists
+exports.checkEmailExists = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if email already exists in the database
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return res.json(true); // Email exists
+    }
+
+    res.json(false); // Email does not exist
+  } catch (error) {
+    console.error(error); // Log the error for debugging purposes
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Check if mobile number already exists
+exports.checkMobileExists = async (req, res) => {
+  try {
+    const { mobile } = req.body;
+
+    // Check if mobile number already exists in the database
+    const existingMobile = await User.findOne({ mobile });
+    if (existingMobile) {
+      return res.json(true); // Mobile number exists
+    }
+
+    res.json(false); // Mobile number does not exist
+  } catch (error) {
+    console.error(error); // Log the error for debugging purposes
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   console.log("total", req.body);
@@ -58,7 +94,35 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: "Error " + error.message });
   }
 };
+exports.resendOTP = async (req, res) => {
+  const { email } = req.body;
 
+  try {
+    // Find the user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate new OTP
+    const otp = generateOTP();
+
+    // Save new OTP to the user document
+    user.otp = otp;
+    await user.save();
+
+    // Send OTP via email
+    try {
+      await sendOTP(email, otp);
+      res.status(200).json({ message: `OTP resent to ${email}` });
+    } catch (error) {
+      res.status(500).json({ message: 'Error sending OTP', error });
+    }
+  } catch (error) {
+    res.status(500).json({ error: `Error: ${error.message}` });
+  }
+};
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -78,6 +142,8 @@ exports.verifyOtp = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find();
@@ -185,3 +251,26 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+exports.updateUserAddress = async (req, res) => {
+  try {
+    const { userid } = req.params;
+    const { address } = req.body;
+
+    // Find the user by ID and update the address field
+    const user = await User.findByIdAndUpdate(
+      userid,
+      { address: address },
+      { new: true } // This option returns the updated document
+    );
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "Address updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+//
