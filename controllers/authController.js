@@ -1,15 +1,16 @@
 const User = require("../models/usermodel");
-
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 const { generateOTP, sendOTP } = require('../utils/otp'); 
 
 exports.register = async (req, res) => {
   try {
     console.log("hello")
-    const { firstname, lastname, password, email, mobile,role,cart,address,wishlist } = req.body;
+    const { firstname, lastname, password, email, mobile,role,cart,address,wishlist,authenticatorSecret} = req.body;
   console.log(req.body)
    
     // Create and save the new user
-    const user = new User({ firstname, lastname, password, email, mobile,role,cart,address,wishlist });
+    const user = new User({ firstname, lastname, password, email, mobile,role,cart,address,wishlist,authenticatorSecret });
     await user.save();
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
@@ -58,7 +59,88 @@ exports.checkMobileExists = async (req, res) => {
   }
 };
 
+exports.setupGoogleAuthenticator = async (req, res) => {
+  const { email } = req.body;
 
+  try {
+    // Find the user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate a secret key
+    const secret = speakeasy.generateSecret({ length: 20 });
+console.log(secret)
+    // Save the secret to the user's document
+    user.authenticatorSecret = secret.base32;
+  
+    await user.save();
+
+    // Generate a QR code for the secret
+    const otpauthUrl = speakeasy.otpauthURL({
+      secret: secret.ascii,
+      label: `ecom (${email})`,
+      issuer: 'kannan app'
+    });
+
+    QRCode.toDataURL(otpauthUrl, (err, dataUrl) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error generating QR code', error: err });
+      }
+      res.status(200).json({ message: 'Google Authenticator setup complete', qrCodeUrl: dataUrl });
+    });
+  } catch (error) {
+    res.status(500).json({ error: `Error: ${error.message}` });
+  }
+};
+exports.removeGoogleAuthenticator = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // Find the user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Remove the authenticator secret
+    user.authenticatorSecret = null;
+    await user.save();
+
+    res.status(200).json({ message: 'Google Authenticator removed' });
+  } catch (error) {
+    res.status(500).json({ error: `Error: ${error.message}` });
+  }
+};
+exports.verifygoogleotp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find the user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Verify the OTP using the user's authenticatorSecret
+    const isValidOTP = speakeasy.totp.verify({
+      secret: user.authenticatorSecret,
+      encoding: 'base32',
+      token: otp,
+    //    // Allows for a time step before and after for tolerance
+    });
+
+    if (!isValidOTP) {
+      return res.status(401).json({ message: 'Invalid google OTP' });
+    }
+
+    res.status(200).json({ message: 'google authentication  OTP verified successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   console.log("total", req.body);
@@ -94,6 +176,7 @@ exports.login = async (req, res) => {
     res.status(500).json({ error: "Error " + error.message });
   }
 };
+
 exports.resendOTP = async (req, res) => {
   const { email } = req.body;
 

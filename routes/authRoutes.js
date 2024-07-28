@@ -15,4 +15,7 @@ router.put('/updateaddress/:userid', authController.updateUserAddress);
 router.post('/checkemail',authController.checkEmailExists);
 router.post('/checkmobile',authController.checkMobileExists);
 router.post('/resendotp',authController.resendOTP)
+router.post('/setup-google-authenticator', authController.setupGoogleAuthenticator);
+router.post('/verifygoogleotp',authController.verifygoogleotp);
+router.post('/removeauth',authController.removeGoogleAuthenticator)
 module.exports = router;

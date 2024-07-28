@@ -39,6 +39,7 @@ var userSchema = new mongoose.Schema({
     type: String,
   },
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "product" }],
+   // Add this field
   id:{
     type:Date,
     default:Date.now()
@@ -51,7 +52,7 @@ var userSchema = new mongoose.Schema({
     type:String
   },
   
-  
+  authenticatorSecret: { type: String},
 },
   {
     timestamps: true,
