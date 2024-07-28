@@ -18,4 +18,5 @@ router.post('/resendotp',authController.resendOTP)
 router.post('/setup-google-authenticator', authController.setupGoogleAuthenticator);
 router.post('/verifygoogleotp',authController.verifygoogleotp);
 router.post('/removeauth',authController.removeGoogleAuthenticator)
+router.get('/getsecret/:email',authController.getAuthenticatorSecretByEmail)
 module.exports = router;

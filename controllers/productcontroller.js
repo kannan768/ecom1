@@ -48,7 +48,7 @@ exports.createProduct = async (req, res) => {
     });
 
     await product.save();
-    res.status(201).json({ message: "Product created successfully", product });
+    res.status(201).json(product);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -64,37 +64,51 @@ exports.createProduct = async (req, res) => {
       res.status(500).json({ error: error.message });
     }
   }; */
-  exports.getAllProducts = async (req, res) => {
-    try {
-        // Get page and limit from query parameters with default values
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 2;
+//   exports.getAllProducts = async (req, res) => {
+//     try {
+//         // Get page and limit from query parameters with default values
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 2;
 
-        // Calculate the starting index of the items for the current page
-        const startIndex = (page - 1) * limit;
+//         // Calculate the starting index of the items for the current page
+//         const startIndex = (page - 1) * limit;
 
-        // Find products, sorted by latest post, with pagination and field limiting
-        const products = await Product.find()
-            .sort({ createdAt: -1 })
-            .skip(startIndex)
-            .limit(limit)
-            //.select('name price createdAt'); // Replace with the fields you want to return
+//         // Find products, sorted by latest post, with pagination and field limiting
+//         const products = await Product.find()
+//             .sort({ createdAt: -1 })
+//             .skip(startIndex)
+//             .limit(limit)
+//             //.select('name price createdAt'); // Replace with the fields you want to return
 
-        if (products.length === 0) {
-            return res.status(404).json({ message: "No data found" });
-        }
+//         if (products.length === 0) {
+//             return res.status(404).json({ message: "No data found" });
+//         }
 
-        res.status(200).json({
-            products,
-            page,
-            totalPages: Math.ceil(await Product.countDocuments() / limit),
-            totalProducts: await Product.countDocuments(),
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+//         res.status(200).json({
+//             products,
+//             page,
+//             totalPages: Math.ceil(await Product.countDocuments() / limit),
+//             totalProducts: await Product.countDocuments(),
+//         });
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     }
+// };
+exports.getAllProducts = async (req, res) => {
+  try {
+      // Find all products, sorted by latest post
+      const products = await Product.find().sort({ createdAt: -1 });
+
+      if (products.length === 0) {
+          return res.status(404).json({ message: "No data found" });
+      }
+
+      res.status(200).json({ products });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
 };
- 
+
 
   exports.getProductById = async (req, res) => {
     try {

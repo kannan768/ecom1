@@ -12,7 +12,8 @@ exports.register = async (req, res) => {
     // Create and save the new user
     const user = new User({ firstname, lastname, password, email, mobile,role,cart,address,wishlist,authenticatorSecret });
     await user.save();
-    res.status(201).json({ message: "User registered successfully" });
+    console.log(user)
+    res.status(201).json(user);
   } catch (error) {
     console.error(error); // Log the error for debugging purposes
     res.status(500).json({ error: error.message }); 
@@ -247,6 +248,24 @@ exports.getUserByEmail = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getAuthenticatorSecretByEmail = async (req, res) => {
+  const { email } = req.params; // Expecting email as a URL parameter
+
+  try {
+    // Find the user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Return only the authenticatorSecret
+    res.status(200).json({ authenticatorSecret: user.authenticatorSecret });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
